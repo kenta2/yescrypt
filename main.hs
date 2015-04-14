@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables, LambdaCase, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ScopedTypeVariables, LambdaCase #-}
 module Main where {
 import Data.List;
 import Data.Bits(xor,(.&.));
