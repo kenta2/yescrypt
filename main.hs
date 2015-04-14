@@ -1,7 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables, LambdaCase, GeneralizedNewtypeDeriving #-}
 module Main where {
 import Data.List;
-import Data.Bits(xor);
+import Data.Bits(xor,(.&.));
 import qualified Data.ByteString.Lazy as Lazy;
 import qualified Data.Binary as Binary;
 import Data.Binary(Binary);
@@ -24,8 +24,12 @@ newtype Pwx_simple = Pwx_simple Integer deriving (Show);
 newtype Pwx_gather = Pwx_gather Integer deriving (Show,Enum,Eq);
 newtype Pwx_rounds = Pwx_rounds Integer deriving (Show,Eq,Enum);
 newtype Swidth = Swidth Integer deriving (Show);
-newtype Sbox = Sbox ByteString;
 newtype Btype = Btype Word64 deriving (Show);
+unB :: Btype -> Word64;
+unB (Btype x) = x;
+
+newtype Stype = Stype Word64;
+type Sbox = Vector [Stype];
 
 -- for(i=start;i<=end;i++){acc=f(acc,i)}
 counting_fold :: (Enum a, Eq a) => a -> a -> acc -> (acc -> a -> acc) -> acc;
@@ -39,14 +43,24 @@ pwx1 :: Pwx_simple -> Pwx_gather -> Swidth -> Sbox -> [[Btype]] -> [[Btype]];
 pwx1 simple (Pwx_gather gather) swidth sbox b = assert (gather == genericLength b)
 $ map (pwx2 simple swidth sbox) b;
 
+-- need to figure out relationship between sizeof Sbox and Pwx_simple and smask
+
 pwx2 :: Pwx_simple -> Swidth -> Sbox -> [Btype] -> [Btype];
-pwx2 (Pwx_simple simple) (Swidth swidth) sbox b = let {
-smask :: Integer;
-smask = (2^swidth-1)*simple*8;
-bj0 :: Integer;
-bj0 = undefined;
-(lo,hi) = split64 bj0;
-} in undefined;
+pwx2 simple (Swidth swidth) sbox b = let {
+ sim8 :: Integer;
+ sim8 = case simple of {Pwx_simple x -> x *8};
+ smask :: Word32;
+ smask = safeFromIntegral $ (2^swidth-1)*sim8;
+ p :: [Word32];
+ p = map (\bj0 -> case divMod ((.&.) bj0 smask) (safeFromIntegral sim8) of {
+  (q,0) -> q;
+  _ -> error "p did not divide cleanly";}) $ split64 $ unB $ head b;  -- the first element of each row is special, used to look up which sbox to use.
+ s :: [[Stype]];
+ s = map (vector_genericIndex sbox) p;
+} in zipWith3 f3 b (s!!0) (s!!1);
+
+vector_genericIndex :: (Integral index) => Vector a -> index -> a;
+vector_genericIndex v i = v Vector.! (safeFromIntegral i);
 
 type Word_vec = Vector Word64;
 
@@ -78,16 +92,23 @@ qr_multiply modulus x = let {
 } in q*r;
 
 qr_multiply_word64 :: Word64 -> Word64;
-qr_multiply_word64 = fromIntegral . qr_multiply two32 . fromIntegral;
+qr_multiply_word64 = safeFromIntegral . qr_multiply two32 . fromIntegral;
 
-f3 :: Word64 -> Word64 -> Word64 -> Word64;
-f3 b s0 s1 = xor (qr_multiply_word64 b + s0) s1;
+f3 :: Btype -> Stype -> Stype -> Btype;
+f3 (Btype b) (Stype s0) (Stype s1) = Btype $ xor (qr_multiply_word64 b + s0) s1;
 
-split64 :: Integer -> (Integer,Integer);
-split64 x = divMod x two32;
+split64 :: Word64 -> [Word32];
+split64 x = case divMod x $ safeFromIntegral two32 of {
+(q,r) -> [safeFromIntegral r,safeFromIntegral q];
+};
 
 two32 :: Integer;
 two32 = 2^(32::Integer);
+
+safeFromIntegral :: forall a b . (Integral a, Integral b, Bounded b) => a -> b;
+safeFromIntegral x = let { ix :: Integer ; ix = fromIntegral x} in if (ix < (fromIntegral (minBound::b))) || (ix > (fromIntegral (maxBound::b)))
+then error "safeFromIntegral: out of range"
+else fromIntegral x;
 
 main :: IO (); main = undefined;
 } --end
