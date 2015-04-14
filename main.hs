@@ -25,21 +25,22 @@ newtype Pwx_gather = Pwx_gather Integer deriving (Show,Enum,Eq);
 newtype Pwx_rounds = Pwx_rounds Integer deriving (Show,Eq,Enum);
 newtype Swidth = Swidth Integer deriving (Show);
 newtype Sbox = Sbox ByteString;
-newtype Btype = Btype (Vector (Vector Word64));
+newtype Btype = Btype Word64 deriving (Show);
 
 -- for(i=start;i<=end;i++){acc=f(acc,i)}
 counting_fold :: (Enum a, Eq a) => a -> a -> acc -> (acc -> a -> acc) -> acc;
 counting_fold start end acc0 f = if start == end then acc0
 else counting_fold (succ start) end (f acc0 start) f;
 
-pwxform :: Pwx_simple -> Pwx_gather -> Pwx_rounds -> Swidth -> Sbox -> Btype -> Btype;
+pwxform :: Pwx_simple -> Pwx_gather -> Pwx_rounds -> Swidth -> Sbox -> [[Btype]] -> [[Btype]];
 pwxform simple gather (Pwx_rounds rounds) swidth sbox b = (flip genericIndex) rounds $ (flip iterate) b $ pwx1 simple gather swidth sbox;
 
-pwx1 :: Pwx_simple -> Pwx_gather -> Swidth -> Sbox -> Btype -> Btype;
-pwx1 simple gather swidth sbox b = counting_fold (Pwx_gather 0) gather b $ pwx2 simple swidth sbox;
+pwx1 :: Pwx_simple -> Pwx_gather -> Swidth -> Sbox -> [[Btype]] -> [[Btype]];
+pwx1 simple (Pwx_gather gather) swidth sbox b = assert (gather == genericLength b)
+$ map (pwx2 simple swidth sbox) b;
 
-pwx2 :: Pwx_simple -> Swidth -> Sbox -> Btype -> Pwx_gather -> Btype;
-pwx2 (Pwx_simple simple) (Swidth swidth) sbox b j = let {
+pwx2 :: Pwx_simple -> Swidth -> Sbox -> [Btype] -> [Btype];
+pwx2 (Pwx_simple simple) (Swidth swidth) sbox b = let {
 smask :: Integer;
 smask = (2^swidth-1)*simple*8;
 bj0 :: Integer;
