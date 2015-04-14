@@ -21,8 +21,8 @@ to_hex :: ByteString -> String;
 to_hex =  map (toEnum . fromEnum) . ByteString.unpack . Base16.encode;
 
 newtype Pwx_simple = Pwx_simple Integer deriving (Show);
-newtype Pwx_gather = Pwx_gather Integer deriving (Show,Enum,Eq);
-newtype Pwx_rounds = Pwx_rounds Integer deriving (Show,Eq,Enum);
+newtype Pwx_gather = Pwx_gather Integer deriving (Show);
+newtype Pwx_rounds = Pwx_rounds Integer deriving (Show);
 newtype Swidth = Swidth Integer deriving (Show);
 newtype Btype = Btype Word64 deriving (Show);
 unB :: Btype -> Word64;
