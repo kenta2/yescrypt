@@ -1,24 +1,24 @@
 {-# LANGUAGE ScopedTypeVariables, LambdaCase #-}
-module Main where {
+module Pwxform(pwxform) where {
 import Data.List;
 import Data.Bits(xor,(.&.));
-import qualified Data.ByteString.Lazy as Lazy;
-import qualified Data.Binary as Binary;
-import Data.Binary(Binary);
-import Data.Binary.Get(runGet);
-import qualified Data.Binary.Get as Binary.Get;
+-- import qualified Data.ByteString.Lazy as Lazy;
+-- import qualified Data.Binary as Binary;
+-- import Data.Binary(Binary);
+-- import Data.Binary.Get(runGet);
+-- import qualified Data.Binary.Get as Binary.Get;
 import Control.Exception(assert);
 import Data.Vector(Vector);
 import qualified Data.Vector as Vector;
 import Data.Word;
-import qualified Data.ByteString as ByteString;
-import Data.ByteString(ByteString);
-import Data.ByteString.Base16 as Base16;
+-- import qualified Data.ByteString as ByteString;
+-- import Data.ByteString(ByteString);
+-- import Data.ByteString.Base16 as Base16;
 -- import Crypto.PBKDF.ByteString(sha256PBKDF2);
 -- import qualified Crypto.Hash.SHA256 as SHA256;
 
-to_hex :: ByteString -> String;
-to_hex =  map (toEnum . fromEnum) . ByteString.unpack . Base16.encode;
+-- to_hex :: ByteString -> String;
+-- to_hex =  map (toEnum . fromEnum) . ByteString.unpack . Base16.encode;
 
 newtype Pwx_simple = Pwx_simple Integer deriving (Show);
 newtype Pwx_gather = Pwx_gather Integer deriving (Show);
@@ -32,9 +32,9 @@ newtype Stype = Stype Word64;
 type Sbox = Vector [Stype];
 
 -- for(i=start;i<=end;i++){acc=f(acc,i)}
-counting_fold :: (Enum a, Eq a) => a -> a -> acc -> (acc -> a -> acc) -> acc;
-counting_fold start end acc0 f = if start == end then acc0
-else counting_fold (succ start) end (f acc0 start) f;
+-- counting_fold :: (Enum a, Eq a) => a -> a -> acc -> (acc -> a -> acc) -> acc;
+-- counting_fold start end acc0 f = if start == end then acc0
+-- else counting_fold (succ start) end (f acc0 start) f;
 
 pwxform :: Pwx_simple -> Pwx_gather -> Pwx_rounds -> Swidth -> Sbox -> [[Btype]] -> [[Btype]];
 pwxform simple gather (Pwx_rounds rounds) swidth sbox b = (flip genericIndex) rounds $ (flip iterate) b $ pwx1 simple gather swidth sbox;
@@ -62,28 +62,28 @@ pwx2 simple (Swidth swidth) sbox b = let {
 vector_genericIndex :: (Integral index) => Vector a -> index -> a;
 vector_genericIndex v i = v Vector.! (safeFromIntegral i);
 
-type Word_vec = Vector Word64;
+-- type Word_vec = Vector Word64;
 
-to_word_vec :: ByteString -> Word_vec;
-to_word_vec b = assert (mod (ByteString.length b) 8 ==0)
-$ Vector.fromList $ runGet get_many_until_empty $ Lazy.fromStrict b;
+-- to_word_vec :: ByteString -> Word_vec;
+-- to_word_vec b = assert (mod (ByteString.length b) 8 ==0)
+-- $ Vector.fromList $ runGet get_many_until_empty $ Lazy.fromStrict b;
 
 -- A seemingly useful function for Binary.Get but unfortunately of
 -- limited use, because it does not parse lazily, i.e. does not return
 -- a lazy list; it must consume the entire input before returning the
 -- first item.
-get_many_until_empty :: forall a. Binary a => Binary.Get [a];
-get_many_until_empty = Binary.Get.isEmpty >>= \case {
-True -> return [];
-False -> do {
-x <- Binary.get;
-rest :: [a] <- get_many_until_empty;
-return $ x:rest;
-}};
+-- get_many_until_empty :: forall a. Binary a => Binary.Get [a];
+-- get_many_until_empty = Binary.Get.isEmpty >>= \case {
+-- True -> return [];
+-- False -> do {
+-- x <- Binary.get;
+-- rest :: [a] <- get_many_until_empty;
+-- return $ x:rest;
+-- }};
 
-raise_dimension :: Integer -> Vector a -> Vector (Vector a);
-raise_dimension n v = assert (mod (fromIntegral $ Vector.length v) n ==0)
-$ Vector.unfoldr (\small -> if Vector.length small ==0 then Nothing else Just $ Vector.splitAt (fromIntegral n) small) v;
+-- raise_dimension :: Integer -> Vector a -> Vector (Vector a);
+-- raise_dimension n v = assert (mod (fromIntegral $ Vector.length v) n ==0)
+-- $ Vector.unfoldr (\small -> if Vector.length small ==0 then Nothing else Just $ Vector.splitAt (fromIntegral n) small) v;
 
 -- this curious primitive is at the heart of pwxform
 qr_multiply :: Integer -> Integer -> Integer;
@@ -110,5 +110,4 @@ safeFromIntegral x = let { ix :: Integer ; ix = fromIntegral x} in if (ix < (fro
 then error "safeFromIntegral: out of range"
 else fromIntegral x;
 
-main :: IO (); main = undefined;
 } --end
