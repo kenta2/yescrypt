@@ -1,5 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables, LambdaCase, AllowAmbiguousTypes #-}
 module Salsa20 where {
+import Control.Exception(assert);
 import Data.Typeable(Typeable,cast);
 import Data.Word;
 import Data.Bits(rotate,xor,Bits);
@@ -15,8 +16,8 @@ newtype Rotation = Rotation Int deriving (Show);
 
 type W = Word32;
 
-r :: (Bits a, Num a) => Rotation -> a -> a -> a -> a;
-r (Rotation k) a b c = xor c $ rotate (a + b) k;
+round_func :: (Bits a, Num a) => Rotation -> a -> a -> a -> a;
+round_func (Rotation k) a b c = xor c $ rotate (a + b) k;
 
 type Coord = (Integer,Integer);
 
@@ -57,11 +58,27 @@ fourfunc arity f shifts l0 = let
 ; answer = zipWith f shifts $ transpose $ (genericDrop arity l:) $ genericTake arity $ tails $ genericTake arity l ++ answer;
 } in answer;
 
+column :: (Num a, Typeable a, Bits a) => [a] -> [a];
+column = fourfunc 2 r_as_list (map Rotation [7,9,13,18]);
+
+order :: [Integer];
+order = [4,8,12,0];
+atest :: [(Algebraic (Integer,Bool),Integer)];
+atest = zip (column $ do { n <- (list_rotate 2 order); return $ Atom (n,False)}) order;
+
+shift_columns :: [[a]] -> [[a]];
+-- shift_columns [] = error "empty shift_columns";
+-- shift_columns (x:rest) = list_rotate (pred $ genericLength x) x : zipWith list_rotate (enumFrom 0) rest;
+shift_columns = zipWith list_rotate (enumFrom 1);
+
+test_shift_columns :: [[Algebraic Integer]];
+test_shift_columns = shift_columns $ transpose $ to_matrix 4 $ map Atom [0..15];
+
 r_as_list :: forall a . (Typeable a, Bits a, Num a) => Rotation -> [a] -> a;
 -- this is how to trace a polymorphic function
 r_as_list k (l@[c,a,b]) = no_trace (case cast l of {
 Nothing -> "not word";
-Just (ww::[W]) -> "(" ++ show k ++ ",[" ++ (unwords $ map whex ww) ++ "])"}) $ r k a b c;
+Just (ww::[W]) -> "(" ++ show k ++ ",[" ++ (unwords $ map whex ww) ++ "])"}) $ round_func k a b c;
 r_as_list _ _ = error "wrong arity";
 
 -- map whex $ fourfunc 2 r_as_list (map Rotation [7,9,13,18]) [0x18171615,0x61707865::W,0x100f0e0d,0x7]
@@ -74,22 +91,13 @@ no_trace = flip const;
 whex :: W -> String;
 whex x = printf "%x" x;
 
-shift_columns :: [[a]] -> [[a]];
-shift_columns [] = error "empty shift_columns";
-shift_columns (x:rest) = list_rotate (pred $ genericLength x) x : zipWith list_rotate (enumFrom 0) rest;
 
-column :: (Num a, Typeable a, Bits a) => [a] -> [a];
-column = fourfunc 2 r_as_list (map Rotation [7,9,13,18]);
 
 take_same_length :: [a] -> [b] -> [b];
 take_same_length [] _ = [];
 take_same_length (_:r1) (h:r2) = h:take_same_length r1 r2;
 take_same_length _ _ = error "take_same_length: second list too short";
 
-order :: [Integer];
-order = [4,8,12,0];
-atest :: [(Algebraic (Integer,Bool),Integer)];
-atest = zip (column $ do { n <- (list_rotate 2 order); return $ Atom (n,False)}) order;
 
 atest_out :: [(Algebraic (Integer,Bool),Integer)];
 atest_out = simplify_in_order atest;
@@ -101,6 +109,10 @@ others (h:rest) = (h,rest):do {
 (p,q) <- others rest;
 return (p, h:q);
 };
+
+to_matrix :: Integer -> [a] -> [[a]];
+to_matrix n = unfoldr (\l -> case l of {[] -> Nothing; _ -> let {r = genericSplitAt n l} in assert (n == (genericLength $ fst r)) $ Just r});
+
 
 
 }
