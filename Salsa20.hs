@@ -7,7 +7,7 @@ import Data.Bits(rotate,xor,Bits);
 import Data.Array.ST(STArray);
 import Data.Array.IArray;
 import Data.List;
-import AlgebraicSalsa20;
+
 
 -- import Debug.Trace;
 import Text.Printf;
@@ -17,12 +17,15 @@ newtype Rotation = Rotation Int deriving (Show);
 type W = Word32;
 
 round_func :: (Bits a, Num a) => Rotation -> a -> a -> a -> a;
-round_func (Rotation k) a b c = xor c $ rotate (a + b) k;
+round_func (Rotation k) a b c = xor c $ rotate (b + a) k;
 
 type Coord = (Integer,Integer);
 
 type Concrete s = STArray s Coord W;
 
+newtype Arity = Arity Integer deriving (Show);
+unArity :: Arity -> Integer;
+unArity (Arity n) = n;
 
 flip_tuple :: (a,b) -> (b,a);
 flip_tuple (x,y) = (y,x);
@@ -39,7 +42,9 @@ zip_map :: (a -> b) -> [a] -> [(a,b)];
 zip_map f l = zip l $ map f l;
 
 list_rotate :: Integer -> [a] -> [a];
-list_rotate n l = genericDrop n l ++ genericTake n l;
+list_rotate n l = if n>=0
+then genericDrop n l ++ genericTake n l
+else list_rotate (genericLength l + n) l;
 
 {-
 a b c 7 c:=1
@@ -50,29 +55,34 @@ b 1 d 9 d:=2
 -}
 -- arity=2 for salsa20, the number of elements above the current position it depends on.
 -- it always depends on the current position, so actual arity of r is arity+1;
-fourfunc :: forall a b . Integer -> (b -> [a] -> a) -> [b] -> [a] -> [a];
-fourfunc arity f shifts l0 = let
+fourfunc :: forall a b . Arity -> (b -> [a] -> a) -> [b] -> [a] -> [a];
+fourfunc (Arity arity) f shifts l0 = let
 { l :: [a]
 ; l = cycle l0
 ; answer :: [a]
-; answer = zipWith f shifts $ transpose $ (genericDrop arity l:) $ genericTake arity $ tails $ genericTake arity l ++ answer;
+-- cycle shifts is for generalization of salsa20 on bigger matrices, yet still keeping the 4 rotation amounts.  Just repeat the rotations as necessary: far from clear this is a safe thing to do.
+; answer = zipWith f (cycle shifts) $ transpose $ (genericDrop arity l:) $ genericTake arity $ tails $ genericTake arity l ++ answer;
 } in answer;
 
-column :: (Num a, Typeable a, Bits a) => [a] -> [a];
-column = fourfunc 2 r_as_list (map Rotation [7,9,13,18]);
+salsa20_arity :: Arity;
+salsa20_arity = Arity 2;
 
-order :: [Integer];
-order = [4,8,12,0];
-atest :: [(Algebraic (Integer,Bool),Integer)];
-atest = zip (column $ do { n <- (list_rotate 2 order); return $ Atom (n,False)}) order;
+column :: (Num a, Typeable a, Bits a) => [a] -> [a];
+column input = list_rotate (negate $ unArity salsa20_arity) $ take_same_length input $ fourfunc salsa20_arity r_as_list (map Rotation [7,9,13,18]) input;
+
+order1 :: [Integer];
+order1 = [12,0,4,8];
 
 shift_columns :: [[a]] -> [[a]];
 -- shift_columns [] = error "empty shift_columns";
 -- shift_columns (x:rest) = list_rotate (pred $ genericLength x) x : zipWith list_rotate (enumFrom 0) rest;
-shift_columns = zipWith list_rotate (enumFrom 1);
+shift_columns = zipWith list_rotate (enumFrom $ negate 1);
 
-test_shift_columns :: [[Algebraic Integer]];
-test_shift_columns = shift_columns $ transpose $ to_matrix 4 $ map Atom [0..15];
+unshift_columns :: [[a]] -> [[a]];
+unshift_columns = zipWith list_rotate $ enumFromThen 1 0;
+
+half :: (Num a, Typeable a, Bits a) => [[a]] -> [[a]];
+half = unshift_columns . map column . shift_columns . transpose;
 
 r_as_list :: forall a . (Typeable a, Bits a, Num a) => Rotation -> [a] -> a;
 -- this is how to trace a polymorphic function
@@ -91,16 +101,10 @@ no_trace = flip const;
 whex :: W -> String;
 whex x = printf "%x" x;
 
-
-
 take_same_length :: [a] -> [b] -> [b];
 take_same_length [] _ = [];
 take_same_length (_:r1) (h:r2) = h:take_same_length r1 r2;
 take_same_length _ _ = error "take_same_length: second list too short";
-
-
-atest_out :: [(Algebraic (Integer,Bool),Integer)];
-atest_out = simplify_in_order atest;
 
 others :: [a] -> [(a,[a])];
 others [] = error "empty";
@@ -113,6 +117,10 @@ return (p, h:q);
 to_matrix :: Integer -> [a] -> [[a]];
 to_matrix n = unfoldr (\l -> case l of {[] -> Nothing; _ -> let {r = genericSplitAt n l} in assert (n == (genericLength $ fst r)) $ Just r});
 
+salsa20_diagonal :: [W];
+salsa20_diagonal = [0x61707865, 0x3320646e, 0x79622d32, 0x6b206574];
 
+int_matrix :: [[Integer]];
+int_matrix = to_matrix 4 [0..15];
 
 }

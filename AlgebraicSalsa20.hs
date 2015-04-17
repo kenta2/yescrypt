@@ -2,8 +2,9 @@
 -- enough rope to evaluate Salsa20 algebraically
 module AlgebraicSalsa20 where {
 import Data.Bits(Bits(..));
-import Data.List(sortBy);
+import Data.List(sortBy,transpose);
 import Data.Ord(comparing);
+import Salsa20;
 data Algebraic a = Atom a | Xor (Algebraic a) (Algebraic a) | Rotate (Algebraic a) Int | Add (Algebraic a) (Algebraic a) deriving (Show,Eq);
 
 instance Num (Algebraic a) where {
@@ -63,5 +64,27 @@ do_by_size f getsize l = let {
 
 simplify_by_size :: [(Algebraic (Integer,Bool), Integer)] -> [(Algebraic (Integer,Bool),Integer)];
 simplify_by_size = do_by_size simplify_in_order (size . fst);
+
+algebraic_show :: (Algebraic (Integer,a)) -> String;
+algebraic_show (Atom (i,_)) = "x[" ++ show i ++ "]";
+algebraic_show (Add x y) = "(" ++ algebraic_show x ++ " + " ++ algebraic_show y ++ ")";
+algebraic_show (Xor x y) = algebraic_show x ++ " ^ " ++ algebraic_show y;
+algebraic_show (Rotate x k) = "(" ++ algebraic_show x ++ " <<< " ++ show k ++ ")";
+
+atest :: [Integer] -> [(Algebraic (Integer,Bool),Integer)];
+atest order = zip (column $ do { n <- order; return $ Atom (n,False)}) order;
+-- list_rotate 2 is because the output lags by 2 (arity) from the input.
+
+test_shift_columns :: [[Algebraic Integer]];
+test_shift_columns = shift_columns $ transpose $ to_matrix 4 $ map Atom [0..15];
+
+atest_out :: [Integer] -> [(Algebraic (Integer,Bool),Integer)];
+atest_out = simplify_in_order . (list_rotate $ unArity salsa20_arity) . atest;
+
+output_c :: ((Algebraic (Integer, a)), Integer) -> String;
+output_c (e,i) = "x[" ++ show i ++ "] := " ++ algebraic_show e;
+
+c_code_out :: [String];
+c_code_out = map output_c $ concatMap atest_out $ (shift_columns $ transpose int_matrix) ++ shift_columns int_matrix;
 
 }
