@@ -1,5 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables, LambdaCase #-}
-module Salsa20(salsa20_test, int_matrix, shift_columns, salsa20_arity, unArity, list_rotate, column) where {
+module Salsa20 where {
 import Control.Exception(assert);
 import Data.Typeable(Typeable,cast);
 import Data.Word;
@@ -97,14 +97,14 @@ start_string = let {
 d i = [salsa20_diagonal !! i]
 } in d 0 ++ take 4 example_key ++ d 1 ++ [0x01040103,0x06020905,7,0] ++ d 2 ++ drop 4 example_key ++ d 3;
 
--- we transpose first because we prefer to word with rows rather than columns
+-- we transpose first because we prefer to work with rows rather than columns
 one_round :: (Typeable a, Num a, Bits a) => [[a]] -> [[a]];
-one_round = unshift_columns . map column . shift_columns .transpose;
+one_round = unshift_columns . map column . shift_columns . transpose;
 
-n_rounds :: (Typeable a, Num a, Bits a) => Integer -> [[a]] -> [[a]];
-n_rounds n = ((flip genericIndex) n) . (iterate one_round);
+core :: (Typeable a, Num a, Bits a) => Integer -> [[a]] -> [[a]];
+core n = ((flip genericIndex) n) . (iterate one_round);
 
 salsa20_test :: Integer -> IO();
-salsa20_test num_rounds = mapM_ putStrLn $ map (unwords . map whex) $ n_rounds num_rounds $ to_matrix 4 start_string;
+salsa20_test num_rounds = mapM_ putStrLn $ map (unwords . map whex) $ core num_rounds $ to_matrix 4 start_string;
 
 }
