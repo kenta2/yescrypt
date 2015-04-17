@@ -80,8 +80,11 @@ take_same_length _ _ = error "take_same_length: second list too short";
 to_matrix :: Integer -> [a] -> [[a]];
 to_matrix n = unfoldr (\case {[] -> Nothing; l -> let {r = genericSplitAt n l} in assert (n == (genericLength $ fst r)) $ Just r});
 
+diagonal_phrase :: String;
+diagonal_phrase = "expand 32-byte k";
+
 salsa20_diagonal :: [W];
-salsa20_diagonal = [0x61707865, 0x3320646e, 0x79622d32, 0x6b206574];
+salsa20_diagonal = map code4bytes $ to_matrix 4 $ map (fromIntegral . fromEnum) diagonal_phrase;
 
 int_matrix :: [[Integer]];
 int_matrix = to_matrix 4 [0..15];
