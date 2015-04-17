@@ -45,13 +45,14 @@ size (Xor x y) = 1 + size x + size y;
 size (Add x y) = 1 + size x + size y;
 size (Rotate x _) = 1 + size x;
 
-simplify_in_order :: [Algebraic (Integer,Bool)] -> [Algebraic (Integer,Bool)];
-simplify_in_order = go (enumFrom 0)
-where {
-go :: [Integer] -> [Algebraic (Integer, Bool)] -> [Algebraic (Integer, Bool)];
-go _ [] = [];
-go (n:nrest) (e:erest) = e:(go nrest $ map (simplify ((n,True), e)) erest);
-go [] _ = error "ran out of numbers";
+simplify_in_order :: [(Algebraic (Integer,Bool),Integer)] -> [(Algebraic (Integer,Bool),Integer)];
+simplify_in_order [] = [];
+simplify_in_order ((e,n):rest) = (e,n):(simplify_in_order $ map_fst (simplify ((n,True), e)) rest);
+
+map_fst :: (a -> b) -> [(a,c)] -> [(b,c)];
+map_fst f l = do {
+x <- l;
+return (f $ fst x, snd x);
 };
 
 do_by_size :: forall a b sortable . (Ord sortable) => ([a] -> [b]) -> (a -> sortable) -> [a] -> [b];
@@ -60,7 +61,7 @@ do_by_size f getsize l = let {
  sz_and = sortBy (comparing $ getsize . fst) $ zip l $ enumFrom 0;
 } in map snd $ sortBy (comparing fst) $ zip (map snd sz_and) (f $ map fst sz_and);
 
-simplify_by_size :: [Algebraic (Integer,Bool)] -> [Algebraic (Integer,Bool)];
-simplify_by_size = do_by_size simplify_in_order size;
+simplify_by_size :: [(Algebraic (Integer,Bool), Integer)] -> [(Algebraic (Integer,Bool),Integer)];
+simplify_by_size = do_by_size simplify_in_order (size . fst);
 
 }

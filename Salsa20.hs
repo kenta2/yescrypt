@@ -81,16 +81,18 @@ shift_columns (x:rest) = list_rotate (pred $ genericLength x) x : zipWith list_r
 column :: (Num a, Typeable a, Bits a) => [a] -> [a];
 column = fourfunc 2 r_as_list (map Rotation [7,9,13,18]);
 
-threefunc1 :: (a -> a -> a -> a) -> [a] -> [a];
-threefunc1 f l = take_same_length l $ zipWith3 f (cycle l) (drop 1 $ cycle l) (drop 2 $ cycle l);
-
 take_same_length :: [a] -> [b] -> [b];
 take_same_length [] _ = [];
 take_same_length (_:r1) (h:r2) = h:take_same_length r1 r2;
 take_same_length _ _ = error "take_same_length: second list too short";
 
-atest :: [Algebraic (Integer,Bool)];
-atest = column $ do { n <- [2,3,0,1]; return $ Atom (n,False)};
+order :: [Integer];
+order = [4,8,12,0];
+atest :: [(Algebraic (Integer,Bool),Integer)];
+atest = zip (column $ do { n <- (list_rotate 2 order); return $ Atom (n,False)}) order;
+
+atest_out :: [(Algebraic (Integer,Bool),Integer)];
+atest_out = simplify_in_order atest;
 
 others :: [a] -> [(a,[a])];
 others [] = error "empty";
@@ -100,6 +102,5 @@ others (h:rest) = (h,rest):do {
 return (p, h:q);
 };
 
---(map (h:) $ others rest);
 
 }
