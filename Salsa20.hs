@@ -6,6 +6,8 @@ import Data.Bits(rotate,xor,Bits);
 import Data.Array.ST(STArray);
 import Data.Array.IArray;
 import Data.List;
+import AlgebraicSalsa20;
+
 -- import Debug.Trace;
 import Text.Printf;
 
@@ -19,6 +21,7 @@ r (Rotation k) a b c = xor c $ rotate (a + b) k;
 type Coord = (Integer,Integer);
 
 type Concrete s = STArray s Coord W;
+
 
 flip_tuple :: (a,b) -> (b,a);
 flip_tuple (x,y) = (y,x);
@@ -38,10 +41,10 @@ list_rotate :: Integer -> [a] -> [a];
 list_rotate n l = genericDrop n l ++ genericTake n l;
 
 {-
-a b c 7
-b 1 d 9
-1 2 e 13
-2 3 f 18
+a b c 7 c:=1
+b 1 d 9 d:=2
+1 2 e 13 e:=3
+2 3 f 18 f:=4
 3 4 g ?
 -}
 -- arity=2 for salsa20, the number of elements above the current position it depends on.
@@ -78,7 +81,6 @@ shift_columns (x:rest) = list_rotate (pred $ genericLength x) x : zipWith list_r
 column :: (Num a, Typeable a, Bits a) => [a] -> [a];
 column = fourfunc 2 r_as_list (map Rotation [7,9,13,18]);
 
-
 threefunc1 :: (a -> a -> a -> a) -> [a] -> [a];
 threefunc1 f l = take_same_length l $ zipWith3 f (cycle l) (drop 1 $ cycle l) (drop 2 $ cycle l);
 
@@ -86,5 +88,18 @@ take_same_length :: [a] -> [b] -> [b];
 take_same_length [] _ = [];
 take_same_length (_:r1) (h:r2) = h:take_same_length r1 r2;
 take_same_length _ _ = error "take_same_length: second list too short";
+
+atest :: [Algebraic (Integer,Bool)];
+atest = column $ do { n <- [2,3,0,1]; return $ Atom (n,False)};
+
+others :: [a] -> [(a,[a])];
+others [] = error "empty";
+others [x] = [(x,[])];
+others (h:rest) = (h,rest):do {
+(p,q) <- others rest;
+return (p, h:q);
+};
+
+--(map (h:) $ others rest);
 
 }
