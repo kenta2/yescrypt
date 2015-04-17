@@ -123,4 +123,24 @@ salsa20_diagonal = [0x61707865, 0x3320646e, 0x79622d32, 0x6b206574];
 int_matrix :: [[Integer]];
 int_matrix = to_matrix 4 [0..15];
 
+code4bytes :: [W] -> W;
+code4bytes = foldr (\b old -> old * 256 +b) 0;
+
+example_key :: [W];
+example_key = map code4bytes $ to_matrix 4 $ enumFromTo 1 32;
+
+start_string :: [W];
+start_string = let {
+d i = [salsa20_diagonal !! i]
+} in d 0 ++ take 4 example_key ++ d 1 ++ [0x01040103,0x06020905,7,0] ++ d 2 ++ drop 4 example_key ++ d 3;
+
+one_round :: (Typeable a, Num a, Bits a) => [[a]] -> [[a]];
+one_round = unshift_columns . map column . shift_columns .transpose;
+
+n_rounds :: (Typeable a, Num a, Bits a) => Integer -> [[a]] -> [[a]];
+n_rounds n = ((flip genericIndex) n) . (iterate one_round);
+
+salsa20_test :: Integer -> IO();
+salsa20_test num_rounds = mapM_ putStrLn $ map (unwords . map whex) $ n_rounds num_rounds $ to_matrix 4 start_string;
+
 }
