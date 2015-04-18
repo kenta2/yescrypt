@@ -8,21 +8,7 @@ c2 = c + d;
 b2 = xor b c2;
 } in (rotate b2 k, c2);
 
-{- and
-Zab->Za (writing Z last)
-bcd->bc (writing b last)
-def->de (writing d last)
-fgh->fg (writing f last)
-
-TUVWXYZabcd
-bcdefgh
-alternatively backward
-Zab -> Za
-XYZ -> XY fgh -> fg
-VWX -> VW def -> de
-
--}
-
+-- someday, extend to greater than 4, but for now, take the easy route of 4xN matrices.
 do_column :: forall a shift_t . Arity -> (shift_t -> [a] -> [a]) -> [shift_t] -> [a] -> [a];
 do_column (Arity arity) f shifts l0 = let
 { l :: [a]
