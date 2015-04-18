@@ -34,8 +34,8 @@ b 1 d 9 d:=2
 -}
 -- arity=2 for salsa20, the number of elements above the current position it depends on.
 -- it always depends on the current position, so actual arity of r is arity+1;
-fourfunc :: forall a b . Arity -> (b -> [a] -> a) -> [b] -> [a] -> [a];
-fourfunc (Arity arity) f shifts l0 = let
+do_column :: forall a b . Arity -> (b -> [a] -> a) -> [b] -> [a] -> [a];
+do_column (Arity arity) f shifts l0 = let
 { l :: [a]
 ; l = cycle l0
 ; answer :: [a]
@@ -47,7 +47,7 @@ salsa20_arity :: Arity;
 salsa20_arity = Arity 2;
 
 column :: (Num a, Typeable a, Bits a) => [a] -> [a];
-column input = list_rotate (negate $ unArity salsa20_arity) $ take_same_length input $ fourfunc salsa20_arity r_as_list (map Rotation [7,9,13,18]) input;
+column input = list_rotate (negate $ unArity salsa20_arity) $ take_same_length input $ do_column salsa20_arity r_as_list (map Rotation [7,9,13,18]) input;
 
 shift_columns :: [[a]] -> [[a]];
 shift_columns = zipWith list_rotate (enumFrom $ negate 1);
