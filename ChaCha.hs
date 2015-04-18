@@ -1,8 +1,10 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module ChaCha where {
+import Control.Monad.Identity;
 import Algebraic;
 import Data.Bits(Bits,xor,rotate);
-import Salsa20(Rotation(..),list_rotate);
+import Salsa20(Rotation(..),list_rotate,to_matrix);
+import Data.List;
 chacha :: (Bits a, Num a) => Rotation -> [a] -> [a];
 chacha (Rotation k) (b:c:d:rest) = let {
 c2 = c + d;
@@ -27,5 +29,29 @@ chacha_algebraic = quarter_round $ map Atom "abcd";
 
 chacha_algebraic_sizes :: IO();
 chacha_algebraic_sizes = mapM_ (print.size) chacha_algebraic;
+
+shift_rows :: [[a]] -> [[a]];
+shift_rows = zipWith list_rotate $ enumFrom 0;
+
+unshift_rows :: [[a]] -> [[a]];
+unshift_rows = zipWith list_rotate $ map negate $ enumFrom 0;
+
+-- we assume the matrix is already transposed;
+-- one_round :: ([a] -> [a]) -> [[a]] -> [[a]];
+--one_round f = transpose . unshift_rows . transpose . map f . transpose . shift_rows . transpose . map f;
+one_roundM :: forall a m . Monad m => ([a] -> m [a]) -> [[a]] -> m [[a]];
+one_roundM f l = mapM f l >>= mapM f . transpose . shift_rows . transpose >>= return . transpose . unshift_rows . transpose;
+
+show_one_round :: IO ();
+show_one_round = do {
+_ <- one_roundM (\l -> do {print l;return l}) $ transpose $ to_matrix 4 [0..15::Integer];
+return ();
+};
+
+one_round :: (Bits a, Num a) => [[a]] -> [[a]];
+one_round = runIdentity . (one_roundM $ return . quarter_round);
+
+core :: (Bits a, Num a) => Integer -> [[a]] -> [[a]];
+core n = transpose . (flip genericIndex) n . iterate one_round . transpose;
 
 }
