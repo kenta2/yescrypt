@@ -46,8 +46,8 @@ do_column (Arity arity) f shifts l0 = let
 salsa20_arity :: Arity;
 salsa20_arity = Arity 2;
 
-column :: (Num a, Typeable a, Bits a) => [a] -> [a];
-column input = list_rotate (negate $ unArity salsa20_arity) $ take_same_length input $ do_column salsa20_arity r_as_list (map Rotation [7,9,13,18]) input;
+quarter_round :: (Num a, Typeable a, Bits a) => [a] -> [a];
+quarter_round input = list_rotate (negate $ unArity salsa20_arity) $ take_same_length input $ do_column salsa20_arity r_as_list (map Rotation [7,9,13,18]) input;
 
 shift_columns :: [[a]] -> [[a]];
 shift_columns = zipWith list_rotate (enumFrom $ negate 1);
@@ -102,7 +102,7 @@ d i = [salsa20_diagonal !! i]
 
 -- we transpose first because we prefer to work with rows rather than columns
 one_round :: (Typeable a, Num a, Bits a) => [[a]] -> [[a]];
-one_round = unshift_columns . map column . shift_columns . transpose;
+one_round = unshift_columns . map quarter_round . shift_columns . transpose;
 
 core :: (Typeable a, Num a, Bits a) => Integer -> [[a]] -> [[a]];
 core n = ((flip genericIndex) n) . (iterate one_round);

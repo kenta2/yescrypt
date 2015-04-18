@@ -17,7 +17,7 @@ algebraic_show (Xor x y) = algebraic_show x ++ " ^ " ++ algebraic_show y;
 algebraic_show (Rotate x k) = "(" ++ algebraic_show x ++ " <<< " ++ show k ++ ")";
 
 run_algebraic :: [Vnum] -> [Assign];
-run_algebraic order = zipWith Assign order (column $ do { n <- order; return $ Atom (n,Original)});
+run_algebraic order = zipWith Assign order (quarter_round $ do { n <- order; return $ Atom (n,Original)});
 -- list_rotate 2 is because the output lags by 2 (arity) from the input.
 
 simplify_run :: [Assign] -> [Assign];
