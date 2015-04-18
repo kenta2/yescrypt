@@ -1,6 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 -- enough rope to evaluate Salsa20 algebraically
 module Algebraic where {
+import Data.Maybe(fromJust);
 import Data.Bits(Bits(..));
 data Algebraic a = Atom a | Xor (Algebraic a) (Algebraic a) | Rotate (Algebraic a) Int | Add (Algebraic a) (Algebraic a) deriving (Show,Eq);
 
@@ -20,13 +21,19 @@ rotate x k = Rotate x k;
 (.|.) = error "Algebraic |";
 complement = error "Algebraic complement";
 shift = error "Algebraic shift";
-bitSize = error "Algebraic bitSize";
-bitSizeMaybe = error "Algebraic bitSizeMaybe";
+bitSize = fromJust . bitSizeMaybe;
+bitSizeMaybe = Just . fromIntegral . size;
 isSigned = error "Algebraic isSigned";
 testBit = error "Algebraic testBit";
 bit = error "Algebraic bit";
 popCount = error "Algebraic popCount";
 };
+
+size :: Algebraic a -> Integer;
+size (Atom _) = 1;
+size (Xor x y) = 1 + size x + size y;
+size (Add x y) = 1 + size x + size y;
+size (Rotate x _) = 1 + size x;
 
 simplify :: (Eq a) => (a,Algebraic a) -> (Algebraic a) -> (Algebraic a);
 simplify v@(n,small) large = if small == large then Atom n
