@@ -14,7 +14,7 @@ algebraic_show :: (Algebraic (Vnum,a)) -> String;
 algebraic_show (Atom ((Vnum i),_)) = "x[" ++ show i ++ "]";
 algebraic_show (Add x y) = "(" ++ algebraic_show x ++ " + " ++ algebraic_show y ++ ")";
 algebraic_show (Xor x y) = algebraic_show x ++ " ^ " ++ algebraic_show y;
-algebraic_show (Rotate x k) = "(" ++ algebraic_show x ++ " <<< " ++ show k ++ ")";
+algebraic_show (Rotate k x) = "(" ++ algebraic_show x ++ " <<< " ++ show k ++ ")";
 
 run_algebraic :: [Vnum] -> [Assign];
 run_algebraic order = zipWith Assign order (quarter_round $ do { n <- order; return $ Atom (n,Original)});
