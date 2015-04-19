@@ -1,5 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module ChaCha where {
+import SeqIterate;
 import Util;
 import Control.Monad.Identity;
 import Algebraic;
@@ -56,15 +57,14 @@ return ();
 double_round :: (Bits a, Num a) => [[a]] -> [[a]];
 double_round = runIdentity . (double_roundM $ return . quarter_round);
 
--- note: this has a memory leak that is noticeable for large n
-core :: (Bits a, Num a) => Integer -> [[a]] -> [[a]];
-core n = transpose . (flip genericIndex) n . iterate double_round . transpose;
+core :: (NFData a, Bits a, Num a) => Integer -> [[a]] -> [[a]];
+core n = transpose . (flip genericIndex) n . seqIterate double_round . transpose;
 
 -- random values generated from c program
 test_input :: [W];
 test_input = [0x456723c6,0x98694873,0xdc515cff,0x944a58ec,0x1f297ccd,0x58bad7ab,0x41f21efb,0xa9e3e146,0x007c62c2,0x085427f8,0x231be9e8,0xcde7438d,0x0f76255a,0xf92e7263,0xc233d79f,0xc4c9079a];
 
-core_plus :: (Bits a, Num a) => Integer -> [[a]] -> [[a]];
+core_plus :: (Bits a, Num a, NFData a) => Integer -> [[a]] -> [[a]];
 core_plus n input = zipWith (zipWith (+)) input $ core n input;
 
 -- name is sic, copying reference code , despite it being ChaCha
