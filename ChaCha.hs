@@ -71,8 +71,9 @@ core_plus n input = zipWith (zipWith (+)) input $ core n input;
 salsa20_wordtobyte :: Double_rounds -> [W] -> [Word8];
 salsa20_wordtobyte rounds = concatMap u32le . concat . core_plus rounds . to_matrix (Matrix_width 4);
 
-chacha_example :: Double_rounds -> IO ();
-chacha_example rounds = do{
+-- This implementation is about 3000 times slower than the reference C implementation (which itself is slower than optimized C implementations).
+example :: Double_rounds -> IO ();
+example rounds = do{
  -- mapM_ putStrLn $ map unwords $ to_matrix 4 $ map whex test_input;
  mapM_ putStrLn $ map unwords $ to_matrix (Matrix_width 16) $ map hex_byte $ salsa20_wordtobyte rounds test_input;
 };
@@ -125,9 +126,12 @@ let {
 
  matrix_with_header "unshifting rows (concludes 1 double round)" $ core (Double_rounds 1) m;
  matrix_with_header "after 8 rounds (4 double rounds)" $ core (Double_rounds 4) m;
- matrix_with_header "Adding the original input to the 8 rounds" $ core_plus (Double_rounds 4) m;
+ matrix_with_header "Adding the original input to the output of 8 rounds" $ core_plus (Double_rounds 4) m;
 
- putStrLn "reading as bytes, little endian";
- chacha_example $ Double_rounds 4;
+ putStrLn "reading the above as bytes, little endian";
+ example $ Double_rounds 4;
+
+ putStrLn "\nsame as above but with 20000 rounds (10000 double rounds)";
+ example $ Double_rounds 10000;
 };
 }
