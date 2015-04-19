@@ -57,24 +57,26 @@ return ();
 double_round :: (Bits a, Num a) => [[a]] -> [[a]];
 double_round = runIdentity . (double_roundM $ return . quarter_round);
 
-core :: (NFData a, Bits a, Num a) => Integer -> [[a]] -> [[a]];
-core n = transpose . (flip genericIndex) n . seqIterate double_round . transpose;
+core :: (NFData a, Bits a, Num a) => Double_rounds -> [[a]] -> [[a]];
+core (Double_rounds n) = transpose . (flip genericIndex) n . seqIterate double_round . transpose;
 
 -- random values generated from c program
 test_input :: [W];
 test_input = [0x456723c6,0x98694873,0xdc515cff,0x944a58ec,0x1f297ccd,0x58bad7ab,0x41f21efb,0xa9e3e146,0x007c62c2,0x085427f8,0x231be9e8,0xcde7438d,0x0f76255a,0xf92e7263,0xc233d79f,0xc4c9079a];
 
-core_plus :: (Bits a, Num a, NFData a) => Integer -> [[a]] -> [[a]];
+core_plus :: (Bits a, Num a, NFData a) => Double_rounds -> [[a]] -> [[a]];
 core_plus n input = zipWith (zipWith (+)) input $ core n input;
 
 -- name is sic, copying reference code , despite it being ChaCha
-salsa20_wordtobyte :: [W] -> [Word8];
-salsa20_wordtobyte = concatMap u32le . concat . core_plus 4 . to_matrix 4;
+salsa20_wordtobyte :: Double_rounds -> [W] -> [Word8];
+salsa20_wordtobyte rounds = concatMap u32le . concat . core_plus rounds . to_matrix 4;
 
-chacha_example :: IO ();
-chacha_example = do{
+newtype Double_rounds = Double_rounds Integer deriving (Show);
+
+chacha_example :: Double_rounds -> IO ();
+chacha_example rounds = do{
  -- mapM_ putStrLn $ map unwords $ to_matrix 4 $ map whex test_input;
- mapM_ putStrLn $ map unwords $ to_matrix 16 $ map hex_byte $ salsa20_wordtobyte test_input;
+ mapM_ putStrLn $ map unwords $ to_matrix 16 $ map hex_byte $ salsa20_wordtobyte rounds test_input;
 };
 
 vector_with_header :: String -> [W] -> IO ();
@@ -123,13 +125,11 @@ let {
 
  matrix_with_headerM m "after another 4 quarter rounds on columns" $ map quarter_round . shift_rows . map quarter_round;
 
- matrix_with_header "unshifting rows (concludes 1 double round)" $ core 1 m;
- matrix_with_header "after 8 rounds (4 double rounds)" $ core 4 m;
- matrix_with_header "after 20000 rounds (10000 double rounds)" $ core 10000 m;
-
- matrix_with_header "Adding the original input to the 8 rounds" $ core_plus 4 m;
+ matrix_with_header "unshifting rows (concludes 1 double round)" $ core (Double_rounds 1) m;
+ matrix_with_header "after 8 rounds (4 double rounds)" $ core (Double_rounds 4) m;
+ matrix_with_header "Adding the original input to the 8 rounds" $ core_plus (Double_rounds 4) m;
 
  putStrLn "reading as bytes, little endian";
- chacha_example;
+ chacha_example $ Double_rounds 4;
 };
 }
