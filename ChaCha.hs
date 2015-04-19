@@ -56,6 +56,7 @@ return ();
 double_round :: (Bits a, Num a) => [[a]] -> [[a]];
 double_round = runIdentity . (double_roundM $ return . quarter_round);
 
+-- note: this has a memory leak that is noticeable for large n
 core :: (Bits a, Num a) => Integer -> [[a]] -> [[a]];
 core n = transpose . (flip genericIndex) n . iterate double_round . transpose;
 
