@@ -116,11 +116,14 @@ let {
  vector_with_header "after second line of round function"
  $ do_column round_function (take 2 rotations) v;
 
+ vector_with_header "after third line of round function"
+ $ do_column round_function (take 3 rotations) v;
+
  vector_with_header "after all 4 lines of round function, i.e., quarter round"
  $ quarter_round v;
 
  matrix_with_headerM m "original matrix" id;
- matrix_with_headerM m "one round (4 quarter rounds)" $ map quarter_round;
+ matrix_with_headerM m "one round (4 quarter rounds on columns)" $ map quarter_round;
 
  matrix_with_headerM m "after shift rows" $ shift_rows . map quarter_round;
 
@@ -133,7 +136,8 @@ let {
  putStrLn "reading the above as bytes, little endian";
  example $ Double_rounds 4;
 
- putStrLn "\nsame as above but with 20000 rounds (10000 double rounds)";
- example $ Double_rounds 10000;
+ let { n = 10000 };
+ putStrLn $ "\nsame as above but with " ++ show (2*n) ++ " rounds (" ++ show n ++ " double rounds)";
+ example $ Double_rounds n;
 };
 }
