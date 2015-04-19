@@ -1,10 +1,12 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module ChaCha where {
+import Util;
 import Control.Monad.Identity;
 import Algebraic;
 import Data.Bits(Bits,xor,rotate);
-import Salsa20(Rotation(..),list_rotate,to_matrix);
+import Salsa20(Rotation(..),list_rotate,to_matrix,W,whex);
 import Data.List;
+import Data.Word;
 chacha :: (Bits a, Num a) => Rotation -> [a] -> [a];
 chacha (Rotation k) (b:c:d:rest) = let {
 c2 = c + d;
@@ -53,5 +55,21 @@ one_round = runIdentity . (one_roundM $ return . quarter_round);
 
 core :: (Bits a, Num a) => Integer -> [[a]] -> [[a]];
 core n = transpose . (flip genericIndex) n . iterate one_round . transpose;
+
+test_input :: [W];
+test_input = [0x456723c6,0x98694873,0xdc515cff,0x944a58ec,0x1f297ccd,0x58bad7ab,0x41f21efb,0xa9e3e146,0x007c62c2,0x085427f8,0x231be9e8,0xcde7438d,0x0f76255a,0xf92e7263,0xc233d79f,0xc4c9079a];
+
+core_plus :: (Bits a, Num a) => Integer -> [[a]] -> [[a]];
+core_plus n input = zipWith (zipWith (+)) input $ core n input;
+
+-- name is sic, copying reference code , despite it being ChaCha
+salsa20_wordtobyte :: [W] -> [Word8];
+salsa20_wordtobyte = concatMap u32le . concat . core_plus 4 . to_matrix 4;
+
+chacha_example :: IO ();
+chacha_example = do{
+ mapM_ putStrLn $ map unwords $ to_matrix 4 $ map whex test_input;
+ mapM_ putStrLn $ map unwords $ to_matrix 16 $ map hex_byte $ salsa20_wordtobyte test_input;
+};
 
 }

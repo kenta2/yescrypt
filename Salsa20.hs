@@ -70,7 +70,7 @@ no_trace :: String -> a -> a;
 no_trace = flip const;
 
 whex :: W -> String;
-whex x = printf "%x" x;
+whex x = printf "%08x" x;
 
 take_same_length :: [a] -> [b] -> [b];
 take_same_length [] _ = [];
