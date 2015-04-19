@@ -69,14 +69,14 @@ core_plus n input = zipWith (zipWith (+)) input $ core n input;
 
 -- name is sic, copying reference code , despite it being ChaCha
 salsa20_wordtobyte :: Double_rounds -> [W] -> [Word8];
-salsa20_wordtobyte rounds = concatMap u32le . concat . core_plus rounds . to_matrix 4;
+salsa20_wordtobyte rounds = concatMap u32le . concat . core_plus rounds . to_matrix (Matrix_width 4);
 
 newtype Double_rounds = Double_rounds Integer deriving (Show);
 
 chacha_example :: Double_rounds -> IO ();
 chacha_example rounds = do{
  -- mapM_ putStrLn $ map unwords $ to_matrix 4 $ map whex test_input;
- mapM_ putStrLn $ map unwords $ to_matrix 16 $ map hex_byte $ salsa20_wordtobyte rounds test_input;
+ mapM_ putStrLn $ map unwords $ to_matrix (Matrix_width 16) $ map hex_byte $ salsa20_wordtobyte rounds test_input;
 };
 
 vector_with_header :: String -> [W] -> IO ();
@@ -106,7 +106,7 @@ let {
  v :: [W];
  v = head $ transpose m;
  m :: [[W]];
- m = to_matrix 4 test_input;
+ m = to_matrix (Matrix_width 4) test_input;
 };
  vector_with_header "original column" v;
  vector_with_header "after first line of round function"

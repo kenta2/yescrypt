@@ -67,13 +67,13 @@ diagonal_phrase :: String;
 diagonal_phrase = "expand 32-byte k";
 
 salsa20_diagonal :: [W];
-salsa20_diagonal = map code4bytes $ to_matrix 4 $ map (fromIntegral . fromEnum) diagonal_phrase;
+salsa20_diagonal = map code4bytes $ to_matrix (Matrix_width 4) $ map (fromIntegral . fromEnum) diagonal_phrase;
 
 code4bytes :: [W] -> W;
 code4bytes = foldr (\b old -> old * 256 +b) 0;
 
 example_key :: [W];
-example_key = map code4bytes $ to_matrix 4 $ enumFromTo 1 32;
+example_key = map code4bytes $ to_matrix (Matrix_width 4) $ enumFromTo 1 32;
 
 start_string :: [W];
 start_string = let {
@@ -88,6 +88,6 @@ core :: (Typeable a, Num a, Bits a) => Integer -> [[a]] -> [[a]];
 core n = ((flip genericIndex) n) . (iterate one_round);
 
 salsa20_test :: Integer -> IO();
-salsa20_test num_rounds = mapM_ putStrLn $ map (unwords . map whex) $ core num_rounds $ to_matrix 4 start_string;
+salsa20_test num_rounds = mapM_ putStrLn $ map (unwords . map whex) $ core num_rounds $ to_matrix (Matrix_width 4) start_string;
 
 }

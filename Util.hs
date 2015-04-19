@@ -20,13 +20,15 @@ list_rotate n l = if n>=0
 then genericDrop n l ++ genericTake n l
 else list_rotate (genericLength l + n) l;
 
-to_matrix :: Integer -> [a] -> [[a]];
-to_matrix n = unfoldr (\case {[] -> Nothing; l -> let {r = genericSplitAt n l} in assert (n == (genericLength $ fst r)) $ Just r});
+newtype Matrix_width = Matrix_width Integer deriving (Show);
+
+to_matrix :: Matrix_width -> [a] -> [[a]];
+to_matrix (Matrix_width n) = unfoldr (\case {[] -> Nothing; l -> let {r = genericSplitAt n l} in assert (n == (genericLength $ fst r)) $ Just r});
 
 whex :: W -> String;
 whex x = printf "%08x" x;
 
 int_matrix :: [[Integer]];
-int_matrix = to_matrix 4 [0..15];
+int_matrix = to_matrix (Matrix_width 4) [0..15];
 
 }
