@@ -71,8 +71,6 @@ core_plus n input = zipWith (zipWith (+)) input $ core n input;
 salsa20_wordtobyte :: Double_rounds -> [W] -> [Word8];
 salsa20_wordtobyte rounds = concatMap u32le . concat . core_plus rounds . to_matrix (Matrix_width 4);
 
-newtype Double_rounds = Double_rounds Integer deriving (Show);
-
 chacha_example :: Double_rounds -> IO ();
 chacha_example rounds = do{
  -- mapM_ putStrLn $ map unwords $ to_matrix 4 $ map whex test_input;

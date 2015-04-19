@@ -31,4 +31,6 @@ whex x = printf "%08x" x;
 int_matrix :: [[Integer]];
 int_matrix = to_matrix (Matrix_width 4) [0..15];
 
+newtype Double_rounds = Double_rounds Integer deriving (Show);
+
 }

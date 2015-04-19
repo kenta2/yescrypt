@@ -1,5 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables, LambdaCase #-}
 module Salsa20 where {
+import SeqIterate;
 import Util;
 import Data.Typeable(Typeable,cast);
 import Data.Bits(rotate,xor,Bits);
@@ -84,10 +85,10 @@ d i = [salsa20_diagonal !! i]
 one_round :: (Typeable a, Num a, Bits a) => [[a]] -> [[a]];
 one_round = unshift_columns . map quarter_round . shift_columns . transpose;
 
-core :: (Typeable a, Num a, Bits a) => Integer -> [[a]] -> [[a]];
-core n = ((flip genericIndex) n) . (iterate one_round);
+core :: (Typeable a, Num a, Bits a, NFData a) => Double_rounds -> [[a]] -> [[a]];
+core (Double_rounds n) = ((flip genericIndex) n) . (seqIterate one_round);
 
-salsa20_test :: Integer -> IO();
+salsa20_test :: Double_rounds -> IO();
 salsa20_test num_rounds = mapM_ putStrLn $ map (unwords . map whex) $ core num_rounds $ to_matrix (Matrix_width 4) start_string;
 
 }
