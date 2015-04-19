@@ -1,17 +1,11 @@
 {-# LANGUAGE ScopedTypeVariables, LambdaCase #-}
 module Salsa20 where {
-import Control.Exception(assert);
+import Util;
 import Data.Typeable(Typeable,cast);
-import Data.Word;
 import Data.Bits(rotate,xor,Bits);
 import Data.List;
 
 -- import Debug.Trace;
-import Text.Printf;
-
-newtype Rotation = Rotation Int deriving (Show);
-
-type W = Word32;
 
 round_func :: (Bits a, Num a) => Rotation -> a -> a -> a -> a;
 round_func (Rotation k) a b c = xor c $ rotate (b + a) k;
@@ -19,11 +13,6 @@ round_func (Rotation k) a b c = xor c $ rotate (b + a) k;
 newtype Arity = Arity Integer deriving (Show);
 unArity :: Arity -> Integer;
 unArity (Arity n) = n;
-
-list_rotate :: Integer -> [a] -> [a];
-list_rotate n l = if n>=0
-then genericDrop n l ++ genericTake n l
-else list_rotate (genericLength l + n) l;
 
 {-
 a b c 7 c:=1
@@ -69,25 +58,16 @@ r_as_list _ _ = error "wrong arity";
 no_trace :: String -> a -> a;
 no_trace = flip const;
 
-whex :: W -> String;
-whex x = printf "%08x" x;
-
 take_same_length :: [a] -> [b] -> [b];
 take_same_length [] _ = [];
 take_same_length (_:r1) (h:r2) = h:take_same_length r1 r2;
 take_same_length _ _ = error "take_same_length: second list too short";
-
-to_matrix :: Integer -> [a] -> [[a]];
-to_matrix n = unfoldr (\case {[] -> Nothing; l -> let {r = genericSplitAt n l} in assert (n == (genericLength $ fst r)) $ Just r});
 
 diagonal_phrase :: String;
 diagonal_phrase = "expand 32-byte k";
 
 salsa20_diagonal :: [W];
 salsa20_diagonal = map code4bytes $ to_matrix 4 $ map (fromIntegral . fromEnum) diagonal_phrase;
-
-int_matrix :: [[Integer]];
-int_matrix = to_matrix 4 [0..15];
 
 code4bytes :: [W] -> W;
 code4bytes = foldr (\b old -> old * 256 +b) 0;

@@ -1,6 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 -- enough rope to evaluate Salsa20 algebraically
 module Main(main) where {
+import Util;
 import Data.List(transpose);
 import Salsa20;
 import Algebraic;

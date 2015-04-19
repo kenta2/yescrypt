@@ -4,7 +4,6 @@ import Util;
 import Control.Monad.Identity;
 import Algebraic;
 import Data.Bits(Bits,xor,rotate);
-import Salsa20(Rotation(..),list_rotate,to_matrix,W,whex);
 import Data.List;
 import Data.Word;
 chacha :: (Bits a, Num a) => Rotation -> [a] -> [a];
@@ -46,7 +45,7 @@ one_roundM f l = mapM f l >>= mapM f . transpose . shift_rows . transpose >>= re
 
 show_one_round :: IO ();
 show_one_round = do {
-_ <- one_roundM (\l -> do {print l;return l}) $ transpose $ to_matrix 4 [0..15::Integer];
+_ <- one_roundM (\l -> do {print l;return l}) $ transpose $ int_matrix;
 return ();
 };
 
