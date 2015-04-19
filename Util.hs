@@ -16,9 +16,10 @@ newtype Rotation = Rotation Int deriving (Show);
 type W = Word32;
 
 list_rotate :: Integer -> [a] -> [a];
-list_rotate n l = if n>=0
-then genericDrop n l ++ genericTake n l
-else list_rotate (genericLength l + n) l;
+list_rotate _ [] = [];
+list_rotate n l = let {
+m = mod n (genericLength l); -- NB mod not rem is important for negative
+} in genericDrop m l ++ genericTake m l;
 
 newtype Matrix_width = Matrix_width Integer deriving (Show);
 

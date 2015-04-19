@@ -48,11 +48,13 @@ unshift_rows = transpose . (zipWith list_rotate $ map negate $ enumFrom 0) . tra
 double_roundM :: forall a m . Monad m => ([a] -> m [a]) -> [[a]] -> m [[a]];
 double_roundM f l = mapM f l >>= mapM f . shift_rows >>= return . unshift_rows ;
 
+-- output matches up with the QUARTERROUND macro calls in C reference implementation
 show_double_round :: IO ();
-show_double_round = do {
-_ <- double_roundM (\l -> do {print l;return l}) $ transpose $ int_matrix;
-return ();
-};
+show_double_round = show_double_round_extended $ Matrix_width 4;
+
+-- extending ChaCha to any 4xW matrix
+show_double_round_extended :: Matrix_width -> IO();
+show_double_round_extended w@(Matrix_width n) = void $ double_roundM (\l -> do {print l;return l}) $ transpose $ to_matrix w $ genericTake (4*n) $ enumFrom (0::Integer);
 
 double_round :: (Bits a, Num a) => [[a]] -> [[a]];
 double_round = runIdentity . (double_roundM $ return . quarter_round);
