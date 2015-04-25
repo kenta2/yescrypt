@@ -34,4 +34,16 @@ int_matrix = to_matrix (Matrix_width 4) [0..15];
 
 newtype Double_rounds = Double_rounds Integer deriving (Show);
 
+diagonal_phrase :: String;
+diagonal_phrase = "expand 32-byte k";
+
+salsa20_diagonal :: [W];
+salsa20_diagonal = u8_to_32_little $ map fromEnum diagonal_phrase;
+
+code4bytes :: [W] -> W;
+code4bytes = foldr (\b old -> old * 256 +b) 0;
+
+u8_to_32_little :: Integral a => [a] -> [W];
+u8_to_32_little = map code4bytes . to_matrix (Matrix_width 4) . map fromIntegral;
+
 }

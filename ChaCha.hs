@@ -7,6 +7,7 @@ import Algebraic;
 import Data.Bits(Bits,xor,rotate);
 import Data.List;
 import Data.Word;
+import Control.Exception(assert);
 
 round_function :: (Bits a, Num a) => Rotation -> [a] -> [a];
 round_function (Rotation k) (b:c:d:rest) = let {
@@ -62,9 +63,8 @@ double_round = runIdentity . (double_roundM $ return . quarter_round);
 core :: (NFData a, Bits a, Num a) => Double_rounds -> [[a]] -> [[a]];
 core (Double_rounds n) = transpose . (flip genericIndex) n . seqIterate double_round . transpose;
 
--- random values generated from c program
 test_input :: [W];
-test_input = [0x456723c6,0x98694873,0xdc515cff,0x944a58ec,0x1f297ccd,0x58bad7ab,0x41f21efb,0xa9e3e146,0x007c62c2,0x085427f8,0x231be9e8,0xcde7438d,0x0f76255a,0xf92e7263,0xc233d79f,0xc4c9079a];
+test_input = key_iv_setup [1..32] [3,1,4,1,5,9,2,6] 7;
 
 core_plus :: (Bits a, Num a, NFData a) => Double_rounds -> [[a]] -> [[a]];
 core_plus n input = zipWith (zipWith (+)) input $ core n input;
@@ -140,4 +140,10 @@ let {
  putStrLn $ "\nsame as above but with " ++ show (2*n) ++ " rounds (" ++ show n ++ " double rounds)";
  example $ Double_rounds n;
 };
+
+key_iv_setup :: [Word8] -> [Word8] -> Word64 -> [W];
+key_iv_setup key iv counter = assert (256 == 8*length key)
+$ assert (64 == 8* length iv)
+$ let { (q,r) = divMod counter $ 2^(32::Integer) }
+in salsa20_diagonal ++ u8_to_32_little key ++ [fromIntegral r, fromIntegral q] ++ u8_to_32_little iv;
 }
