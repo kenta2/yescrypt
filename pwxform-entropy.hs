@@ -8,6 +8,7 @@ import Data.List;
 import qualified Data.IntSet as Set;
 -- IntSet runs out at 16
 -- 15 takes 24 minutes.
+import Data.IntSet(IntSet);
 import System.Environment(getArgs);
 import Control.Exception(assert);
 to_pow_two :: Integer -> [Integer];
@@ -22,9 +23,32 @@ assert (z < fromIntegral (maxBound :: Set.Key)) $ return ();
 return $ fromIntegral z;
 };
 
+max_size :: Int;
+max_size = 10000000;
+size_limited_insert :: IntSet -> Set.Key -> IntSet;
+size_limited_insert s k = if Set.size s < max_size
+then Set.insert k s
+else if k < Set.findMax s
+     then if Set.member k s
+          then s
+          else Set.insert k $ Set.deleteMax s;
+     else s;
+
+analyze_range :: Integer -> Set.Key -> [(Int,Set.Key)];
+analyze_range n vmin = let {
+ done :: IntSet;
+ done = foldl' size_limited_insert Set.empty $ filter (>=vmin) $ all_multiples n;
+ size = Set.size done;
+ vmax = Set.findMax done;
+} in (size,vmax):(
+ if size == max_size
+ then analyze_range n $ succ vmax
+ else []);
+
 main :: IO ();
 main = getArgs >>= \case {
-[n] -> print $ Set.size $ Set.fromList $ all_multiples $ read n;
+["range",n] -> mapM_ print $ analyze_range (read n) 0;
+["original",n] -> print $ Set.size $ Set.fromList $ all_multiples $ read n;
 _ -> error "n";
 };
 
