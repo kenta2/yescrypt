@@ -131,7 +131,7 @@ gen_counter :: [W] -> [W] -> Word64 -> [W];
 gen_counter key iv counter = key_iv_setup key $ iv ++ let { (q,r) = divMod counter $ 2^(32::Integer) } in map fromIntegral [r,q];
 
 salsa20w :: Rounds -> [W] -> [W] -> [[W]];
-salsa20w rounds key iv = map (with_add rounds . gen_counter key iv) [2^(32::Integer)-1..];
+salsa20w rounds key iv = map (with_add rounds . gen_counter key iv) [0..];
 
 xsalsa_w :: Rounds -> [Word8] -> [Word8] -> [[W]];
 xsalsa_w rounds key iv = let
