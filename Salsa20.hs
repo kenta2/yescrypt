@@ -127,13 +127,13 @@ and_add f x = zipWith (+) x $ f x;
 with_add :: (Typeable a, Num a, Bits a, NFData a) => Rounds -> [a] -> [a];
 with_add rounds = and_add $ concat . core rounds . to_matrix (Matrix_width 4);
 
-gen_counter :: [W] -> [W] -> Integer -> [W];
-gen_counter key iv counter = assert (counter>=0)
+encode_counter :: [W] -> [W] -> Integer -> [W];
+encode_counter key iv counter = assert (counter>=0)
 $ assert (counter < 2^(64::Integer))
 $ key_iv_setup key $ iv ++ let { (q,r) = divMod counter $ 2^(32::Integer) } in map fromIntegral [r,q];
 
 salsa20w :: Rounds -> [W] -> [W] -> [[W]];
-salsa20w rounds key iv = map (with_add rounds . gen_counter key iv) [0..];
+salsa20w rounds key iv = map (with_add rounds . encode_counter key iv) [0..];
 
 xsalsa_w :: Rounds -> [Word8] -> [Word8] -> [[W]];
 xsalsa_w rounds key iv = let
