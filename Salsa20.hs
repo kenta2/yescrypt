@@ -114,4 +114,26 @@ $ d 0
 
 hsalsa_subkey :: [[W]] -> [W];
 hsalsa_subkey x = map (genericIndex $ concat x) [0::Integer,5,10,15,6,7,8,9];
+
+hsalsa :: [Word8] -> [Word8] -> [W];
+hsalsa key = hsalsa_subkey . core (Rounds 20) . to_matrix (Matrix_width 4) . hsalsa_setup key;
+
+key_iv_setup :: [W] -> [W] -> [W];
+key_iv_setup key iv =
+let {
+(left :: [W], right :: [W]) = splitAt 4 $ key;
+ d :: Integer -> [W];
+ d i = [genericIndex salsa20_diagonal i];}
+in assert ((256::Integer) == 32* genericLength key)
+$ assert ((4::Integer) == genericLength right)
+$ assert ((4::Integer) == genericLength left)
+$ assert ((128::Integer) == 32* genericLength iv)
+$ d 0
+++ left
+++ d 1
+++ iv
+++ d 2
+++ right
+++ d 3;
+
 }
