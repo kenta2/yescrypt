@@ -9,6 +9,8 @@ import Data.List;
 import Data.Word;
 import Control.Exception(assert);
 
+newtype Double_rounds = Double_rounds Integer deriving (Show);
+
 round_function :: (Bits a, Num a) => Rotation -> [a] -> [a];
 round_function (Rotation k) (b:c:d:rest) = let {
 c2 = c + d;

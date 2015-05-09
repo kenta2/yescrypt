@@ -4,10 +4,10 @@ import SeqIterate;
 import Util;
 import Data.Typeable(Typeable,cast);
 import Data.Bits(rotate,xor,Bits);
-import Data.List hiding (length, replicate);
+import Data.List hiding (length, replicate,(!!));
 import Control.Exception(assert);
 import Data.Word;
-import Prelude hiding(length, replicate);
+import Prelude hiding(length, replicate,(!!));
 
 -- import Debug.Trace;
 
@@ -72,17 +72,20 @@ example_key = map code4bytes $ to_matrix (Matrix_width 4) $ enumFromTo 1 32;
 
 start_string :: [W];
 start_string = let {
-d i = [salsa20_diagonal !! i]
+ d :: Integer -> [W];
+ d i = [genericIndex salsa20_diagonal i]
 } in d 0 ++ take 4 example_key ++ d 1 ++ [0x01040103,0x06020905,7,0] ++ d 2 ++ drop 4 example_key ++ d 3;
 
 -- we transpose first because we prefer to work with rows rather than columns
 one_round :: (Typeable a, Num a, Bits a) => [[a]] -> [[a]];
 one_round = unshift_columns . map quarter_round . shift_columns . transpose;
 
-core :: (Typeable a, Num a, Bits a, NFData a) => Double_rounds -> [[a]] -> [[a]];
-core (Double_rounds n) = ((flip genericIndex) n) . (seqIterate one_round);
+newtype Rounds = Rounds Integer deriving (Show);
 
-salsa20_test :: Double_rounds -> [W] -> IO();
+core :: (Typeable a, Num a, Bits a, NFData a) => Rounds -> [[a]] -> [[a]];
+core (Rounds n) = ((flip genericIndex) n) . (seqIterate one_round);
+
+salsa20_test :: Rounds -> [W] -> IO();
 salsa20_test num_rounds s = mapM_ putStrLn $ map (unwords . map whex) $ core num_rounds $ to_matrix (Matrix_width 4) s;
 
 {-
@@ -95,16 +98,20 @@ hsalsa_setup :: [Word8] -> [Word8] -> [W];
 hsalsa_setup key nonce =
 let {
 (left :: [W], right :: [W]) = splitAt 4 $ u8_to_32_little key;
+ d :: Integer -> [W];
+ d i = [genericIndex salsa20_diagonal i];
 } in assert ((256::Integer) == 8* genericLength key)
 $ assert ((4::Integer) == genericLength right)
 $ assert ((4::Integer) == genericLength left)
 $ assert ((128::Integer) == 8* genericLength nonce)
-$ [salsa20_diagonal !! 0]
+$ d 0
 ++ left
-++ [salsa20_diagonal !! 1]
+++ d 1
 ++ u8_to_32_little nonce
-++ [salsa20_diagonal !! 2]
+++ d 2
 ++ right
-++ [salsa20_diagonal !! 3];
+++ d 3;
 
+hsalsa_subkey :: [[W]] -> [W];
+hsalsa_subkey x = map (genericIndex $ concat x) [0::Integer,5,10,15,6,7,8,9];
 }
