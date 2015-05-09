@@ -4,4 +4,6 @@ x.hsalsa : hsalsa.c
 	gcc -o $@ $(CFLAGS) $^
 x.xsalsa : xsalsa.c
 	gcc -o $@ $(CFLAGS) $^ $(LDFLAGS)
+x.infinite : infinite.c
+	gcc -o $@ $(CFLAGS) $^ $(LDFLAGS)
 
