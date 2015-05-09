@@ -1,0 +1,5 @@
+g++ -O3 -fomit-frame-pointer -funroll-loops
+g++ -O -fomit-frame-pointer
+g++ -fomit-frame-pointer
+spu-g++ -mstdmain -march=cell -O3 -funroll-loops -fomit-frame-pointer -Drandom=rand -Dsrandom=srand
+spu-g++ -mstdmain -march=cell -O -fomit-frame-pointer -Drandom=rand -Dsrandom=srand
