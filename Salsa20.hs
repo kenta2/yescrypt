@@ -4,7 +4,10 @@ import SeqIterate;
 import Util;
 import Data.Typeable(Typeable,cast);
 import Data.Bits(rotate,xor,Bits);
-import Data.List;
+import Data.List hiding (length, replicate);
+import Control.Exception(assert);
+import Data.Word;
+import Prelude hiding(length, replicate);
 
 -- import Debug.Trace;
 
@@ -64,15 +67,6 @@ take_same_length [] _ = [];
 take_same_length (_:r1) (h:r2) = h:take_same_length r1 r2;
 take_same_length _ _ = error "take_same_length: second list too short";
 
-diagonal_phrase :: String;
-diagonal_phrase = "expand 32-byte k";
-
-salsa20_diagonal :: [W];
-salsa20_diagonal = map code4bytes $ to_matrix (Matrix_width 4) $ map (fromIntegral . fromEnum) diagonal_phrase;
-
-code4bytes :: [W] -> W;
-code4bytes = foldr (\b old -> old * 256 +b) 0;
-
 example_key :: [W];
 example_key = map code4bytes $ to_matrix (Matrix_width 4) $ enumFromTo 1 32;
 
@@ -88,7 +82,29 @@ one_round = unshift_columns . map quarter_round . shift_columns . transpose;
 core :: (Typeable a, Num a, Bits a, NFData a) => Double_rounds -> [[a]] -> [[a]];
 core (Double_rounds n) = ((flip genericIndex) n) . (seqIterate one_round);
 
-salsa20_test :: Double_rounds -> IO();
-salsa20_test num_rounds = mapM_ putStrLn $ map (unwords . map whex) $ core num_rounds $ to_matrix (Matrix_width 4) start_string;
+salsa20_test :: Double_rounds -> [W] -> IO();
+salsa20_test num_rounds s = mapM_ putStrLn $ map (unwords . map whex) $ core num_rounds $ to_matrix (Matrix_width 4) s;
+
+{-
+ckkk
+kcnn
+nnck
+kkkc
+-}
+hsalsa_setup :: [Word8] -> [Word8] -> [W];
+hsalsa_setup key nonce =
+let {
+(left :: [W], right :: [W]) = splitAt 4 $ u8_to_32_little key;
+} in assert ((256::Integer) == 8* genericLength key)
+$ assert ((4::Integer) == genericLength right)
+$ assert ((4::Integer) == genericLength left)
+$ assert ((128::Integer) == 8* genericLength nonce)
+$ [salsa20_diagonal !! 0]
+++ left
+++ [salsa20_diagonal !! 1]
+++ u8_to_32_little nonce
+++ [salsa20_diagonal !! 2]
+++ right
+++ [salsa20_diagonal !! 3];
 
 }
