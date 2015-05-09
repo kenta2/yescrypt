@@ -95,22 +95,7 @@ nnck
 kkkc
 -}
 hsalsa_setup :: [Word8] -> [Word8] -> [W];
-hsalsa_setup key nonce =
-let {
-(left :: [W], right :: [W]) = splitAt 4 $ u8_to_32_little key;
- d :: Integer -> [W];
- d i = [genericIndex salsa20_diagonal i];
-} in assert ((256::Integer) == 8* genericLength key)
-$ assert ((4::Integer) == genericLength right)
-$ assert ((4::Integer) == genericLength left)
-$ assert ((128::Integer) == 8* genericLength nonce)
-$ d 0
-++ left
-++ d 1
-++ u8_to_32_little nonce
-++ d 2
-++ right
-++ d 3;
+hsalsa_setup key nonce = key_iv_setup (u8_to_32_little key) (u8_to_32_little nonce);
 
 hsalsa_subkey :: [[W]] -> [W];
 hsalsa_subkey x = map (genericIndex $ concat x) [0::Integer,5,10,15,6,7,8,9];
@@ -135,5 +120,29 @@ $ d 0
 ++ d 2
 ++ right
 ++ d 3;
+
+and_add :: (Num a) => ([a] -> [a]) -> [a] -> [a];
+and_add f x = zipWith (+) x $ f x;
+
+with_add :: (Typeable a, Num a, Bits a, NFData a) => Rounds -> [a] -> [a];
+with_add rounds = and_add $ concat . core rounds . to_matrix (Matrix_width 4);
+
+gen_counter :: [W] -> [W] -> Word64 -> [W];
+gen_counter key iv counter = key_iv_setup key $ iv ++ let { (q,r) = divMod counter $ 2^(32::Integer) } in map fromIntegral [r,q];
+
+salsa20w :: Rounds -> [W] -> [W] -> [[W]];
+salsa20w rounds key iv = map (with_add rounds . gen_counter key iv) [2^(32::Integer)-1..];
+
+xsalsa_w :: Rounds -> [Word8] -> [Word8] -> [[W]];
+xsalsa_w rounds key iv = let
+{ (iv1,iv2) = splitAt 16 iv; }
+in salsa20w rounds (hsalsa key iv1) (u8_to_32_little iv2);
+
+block_bytes :: [W] -> [Word8];
+block_bytes = concatMap u32le;
+
+xsalsa :: [Word8] -> [Word8] -> [Word8];
+xsalsa key iv = concatMap block_bytes $ xsalsa_w (Rounds 20) key iv;
+
 
 }

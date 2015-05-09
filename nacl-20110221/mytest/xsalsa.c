@@ -20,6 +20,7 @@ int crypto_stream_salsa20_my(
 
   for (i = 0;i < 8;++i) in[i] = n[i];
   for (i = 8;i < 16;++i) in[i] = 0;
+  for (i = 8;i < 12;++i) in[i] = 255; //artificially set the counter to 2^32-1
 
   while (clen >= 64) {
     crypto_core_salsa20(c,in,k,sigma);
