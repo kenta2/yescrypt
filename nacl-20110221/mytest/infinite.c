@@ -44,10 +44,14 @@ void crypto_stream_my(
 }
 
 int main(void){
-#define SZ 128
   unsigned char nonce[24]={0};
   unsigned char key[32]={0};
   crypto_stream_my(nonce,key);
 
   return 0;
 }
+
+/*
+Approximately 270000 years to consume all 2^64 blocks until the block
+counter overflows.  (Or 270000 computers 1 year.)
+*/
