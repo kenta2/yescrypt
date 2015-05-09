@@ -49,7 +49,7 @@ unshift_rows = transpose . (zipWith list_rotate $ map negate $ enumFrom 0) . tra
 -- one_round :: ([a] -> [a]) -> [[a]] -> [[a]];
 --one_round f = transpose . unshift_rows . transpose . map f . transpose . shift_rows . transpose . map f;
 double_roundM :: forall a m . Monad m => ([a] -> m [a]) -> [[a]] -> m [[a]];
-double_roundM f l = mapM f l >>= mapM f . shift_rows >>= return . unshift_rows ;
+double_roundM f l = mapM f l >>= mapM f . shift_rows >>= return . unshift_rows;
 
 -- output matches up with the QUARTERROUND macro calls in C reference implementation
 show_double_round :: IO ();
@@ -68,17 +68,16 @@ core (Double_rounds n) = transpose . (flip genericIndex) n . seqIterate double_r
 test_input :: [W];
 test_input = key_iv_setup [1..32] [3,1,4,1,5,9,2,6] 7;
 
-core_plus :: (Bits a, Num a, NFData a) => Double_rounds -> [[a]] -> [[a]];
-core_plus n input = zipWith (zipWith (+)) input $ core n input;
+core_plus :: (Bits a, Num a, NFData a) => Double_rounds -> [a] -> [a];
+core_plus rounds = and_add $ concat . core rounds . mat4;
 
 -- name is sic, copying reference code , despite it being ChaCha
 salsa20_wordtobyte :: Double_rounds -> [W] -> [Word8];
-salsa20_wordtobyte rounds = concatMap u32le . concat . core_plus rounds . to_matrix (Matrix_width 4);
+salsa20_wordtobyte rounds = block_bytes . core_plus rounds;
 
 -- This implementation is about 3000 times slower than the reference C implementation (which itself is slower than optimized C implementations).
 example :: Double_rounds -> IO ();
 example rounds = do{
- -- mapM_ putStrLn $ map unwords $ to_matrix 4 $ map whex test_input;
  mapM_ putStrLn $ map unwords $ to_matrix (Matrix_width 16) $ map hex_byte $ salsa20_wordtobyte rounds test_input;
 };
 
@@ -109,7 +108,7 @@ let {
  v :: [W];
  v = head $ transpose m;
  m :: [[W]];
- m = to_matrix (Matrix_width 4) test_input;
+ m = mat4 test_input;
 };
  vector_with_header "original column" v;
  vector_with_header "after first line of round function"
@@ -133,7 +132,7 @@ let {
 
  matrix_with_header "unshifting rows (concludes 1 double round)" $ core (Double_rounds 1) m;
  matrix_with_header "after 8 rounds (4 double rounds)" $ core (Double_rounds 4) m;
- matrix_with_header "Adding the original input to the output of 8 rounds" $ core_plus (Double_rounds 4) m;
+ matrix_with_header "Adding the original input to the output of 8 rounds" $ mat4 $ core_plus (Double_rounds 4) $ concat m;
 
  putStrLn "reading the above as bytes, little endian";
  example $ Double_rounds 4;

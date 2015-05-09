@@ -30,10 +30,13 @@ whex :: W -> String;
 whex x = printf "%08x" x;
 
 int_matrix :: [[Integer]];
-int_matrix = to_matrix (Matrix_width 4) [0..15];
+int_matrix = mat4 [0..15];
 
 diagonal_phrase :: String;
 diagonal_phrase = "expand 32-byte k";
+
+mat4 :: [a] -> [[a]];
+mat4 = to_matrix (Matrix_width 4);
 
 salsa20_diagonal :: [W];
 salsa20_diagonal = u8_to_32_little $ map fromEnum diagonal_phrase;
@@ -42,6 +45,12 @@ code4bytes :: [W] -> W;
 code4bytes = foldr (\b old -> old * 256 +b) 0;
 
 u8_to_32_little :: Integral a => [a] -> [W];
-u8_to_32_little = map code4bytes . to_matrix (Matrix_width 4) . map fromIntegral;
+u8_to_32_little = map code4bytes . mat4 . map fromIntegral;
+
+block_bytes :: [W] -> [Word8];
+block_bytes = concatMap u32le;
+
+and_add :: (Num a) => ([a] -> [a]) -> [a] -> [a];
+and_add f x = zipWith (+) x $ f x;
 
 }

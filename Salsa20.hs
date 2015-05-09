@@ -43,7 +43,7 @@ quarter_round :: (Num a, Typeable a, Bits a) => [a] -> [a];
 quarter_round input = list_rotate (negate $ unArity salsa20_arity) $ take_same_length input $ do_column salsa20_arity r_as_list (map Rotation [7,9,13,18]) input;
 
 shift_columns :: [[a]] -> [[a]];
-shift_columns = zipWith list_rotate (enumFrom $ negate 1);
+shift_columns = zipWith list_rotate $ enumFrom $ negate 1;
 
 unshift_columns :: [[a]] -> [[a]];
 unshift_columns = zipWith list_rotate $ enumFromThen 1 0;
@@ -68,7 +68,7 @@ take_same_length (_:r1) (h:r2) = h:take_same_length r1 r2;
 take_same_length _ _ = error "take_same_length: second list too short";
 
 example_key :: [W];
-example_key = map code4bytes $ to_matrix (Matrix_width 4) $ enumFromTo 1 32;
+example_key = map code4bytes $ mat4 $ enumFromTo 1 32;
 
 start_string :: [W];
 start_string = let {
@@ -83,10 +83,10 @@ one_round = unshift_columns . map quarter_round . shift_columns . transpose;
 newtype Rounds = Rounds Integer deriving (Show);
 
 core :: (Typeable a, Num a, Bits a, NFData a) => Rounds -> [[a]] -> [[a]];
-core (Rounds n) = ((flip genericIndex) n) . (seqIterate one_round);
+core (Rounds n) = ((flip genericIndex) n) . seqIterate one_round;
 
 salsa20_test :: Rounds -> [W] -> IO();
-salsa20_test num_rounds s = mapM_ putStrLn $ map (unwords . map whex) $ core num_rounds $ to_matrix (Matrix_width 4) s;
+salsa20_test num_rounds s = mapM_ putStrLn $ map (unwords . map whex) $ core num_rounds $ mat4 s;
 
 {-
 ckkk
@@ -95,13 +95,13 @@ nnck
 kkkc
 -}
 hsalsa_setup :: [Word8] -> [Word8] -> [W];
-hsalsa_setup key nonce = key_iv_setup (u8_to_32_little key) (u8_to_32_little nonce);
+hsalsa_setup key nonce = key_iv_setup (u8_to_32_little key) $ u8_to_32_little nonce;
 
 hsalsa_subkey :: [[W]] -> [W];
 hsalsa_subkey x = map (genericIndex $ concat x) [0::Integer,5,10,15,6,7,8,9];
 
 hsalsa :: [Word8] -> [Word8] -> [W];
-hsalsa key = hsalsa_subkey . core (Rounds 20) . to_matrix (Matrix_width 4) . hsalsa_setup key;
+hsalsa key = hsalsa_subkey . core (Rounds 20) . mat4 . hsalsa_setup key;
 
 key_iv_setup :: [W] -> [W] -> [W];
 key_iv_setup key iv =
@@ -121,11 +121,8 @@ $ d 0
 ++ right
 ++ d 3;
 
-and_add :: (Num a) => ([a] -> [a]) -> [a] -> [a];
-and_add f x = zipWith (+) x $ f x;
-
 with_add :: (Typeable a, Num a, Bits a, NFData a) => Rounds -> [a] -> [a];
-with_add rounds = and_add $ concat . core rounds . to_matrix (Matrix_width 4);
+with_add rounds = and_add $ concat . core rounds . mat4;
 
 encode_counter :: [W] -> [W] -> Integer -> [W];
 encode_counter key iv counter = assert (counter>=0)
@@ -138,13 +135,9 @@ salsa20w rounds key iv = map (with_add rounds . encode_counter key iv) [0..];
 xsalsa_w :: Rounds -> [Word8] -> [Word8] -> [[W]];
 xsalsa_w rounds key iv = let
 { (iv1,iv2) = splitAt 16 iv; }
-in salsa20w rounds (hsalsa key iv1) (u8_to_32_little iv2);
-
-block_bytes :: [W] -> [Word8];
-block_bytes = concatMap u32le;
+in salsa20w rounds (hsalsa key iv1) $ u8_to_32_little iv2;
 
 xsalsa :: [Word8] -> [Word8] -> [Word8];
 xsalsa key iv = concatMap block_bytes $ xsalsa_w (Rounds 20) key iv;
-
 
 }
