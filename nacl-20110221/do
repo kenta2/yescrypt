@@ -3,6 +3,7 @@
 # nacl/do
 # D. J. Bernstein
 # Public domain.
+set -x
 
 version=`cat version`
 project=nacl
