@@ -44,10 +44,24 @@ void crypto_stream_my(
 }
 
 int main(void){
-  unsigned char nonce[24]={0};
-  unsigned char key[32]={0};
-  crypto_stream_my(nonce,key);
+  unsigned char key[32];
+  unsigned char nonce[24];
 
+  int code;
+  code=fread(key,1,32,stdin);
+  if(code!=32){
+    fprintf(stderr,"Not enough key.\n");
+    return 1;
+  }
+
+  code=fread(nonce,1,24,stdin);
+  if(code!=24){
+    fprintf(stderr,"Not enough nonce.\n");
+    return 1;
+  }
+  // does not check if too much data is supplied
+
+  crypto_stream_my(nonce,key);
   return 0;
 }
 
