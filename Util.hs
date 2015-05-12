@@ -1,7 +1,8 @@
 {-# LANGUAGE LambdaCase #-}
 module Util where {
 import Data.List;
-import Control.Exception(assert);
+-- import Control.Exception(assert);
+import qualified UserError as User;
 import Data.Word;
 import Data.Binary.Put(runPut,putWord32le);
 import qualified Data.ByteString.Lazy as Lazy;
@@ -24,7 +25,7 @@ m = mod n (genericLength l); -- NB mod not rem is important for negative
 newtype Matrix_width = Matrix_width Integer deriving (Show);
 
 to_matrix :: Matrix_width -> [a] -> [[a]];
-to_matrix (Matrix_width n) = unfoldr (\case {[] -> Nothing; l -> let {r = genericSplitAt n l} in assert (n == (genericLength $ fst r)) $ Just r});
+to_matrix (Matrix_width n) = unfoldr (\case {[] -> Nothing; l -> let {r = genericSplitAt n l} in User.assert "to_matrix" (n == (genericLength $ fst r)) $ Just r});
 
 whex :: W -> String;
 whex x = printf "%08x" x;

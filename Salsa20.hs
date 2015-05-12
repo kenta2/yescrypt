@@ -5,7 +5,8 @@ import Util;
 import Data.Typeable(Typeable,cast);
 import Data.Bits(rotate,xor,Bits);
 import Data.List hiding (length, replicate,(!!));
-import Control.Exception(assert);
+-- import Control.Exception(assert);
+import qualified UserError as User;
 import Data.Word;
 import Prelude hiding(length, replicate,(!!));
 
@@ -109,10 +110,10 @@ let {
 (left :: [W], right :: [W]) = splitAt 4 $ key;
  d :: Integer -> [W];
  d i = [genericIndex salsa20_diagonal i];}
-in assert ((256::Integer) == 32* genericLength key)
-$ assert ((4::Integer) == genericLength right)
-$ assert ((4::Integer) == genericLength left)
-$ assert ((128::Integer) == 32* genericLength iv)
+in User.assert "key_iv_setup key length" ((256::Integer) == 32* genericLength key)
+$ User.assert "key_iv_setup right" ((4::Integer) == genericLength right)
+$ User.assert "key_iv_setup left" ((4::Integer) == genericLength left)
+$ User.assert "key_iv_setup iv" ((128::Integer) == 32* genericLength iv)
 $ d 0
 ++ left
 ++ d 1
@@ -125,8 +126,8 @@ with_add :: (Typeable a, Num a, Bits a, NFData a) => Rounds -> [a] -> [a];
 with_add rounds = and_add $ concat . core rounds . mat4;
 
 encode_counter :: [W] -> [W] -> Integer -> [W];
-encode_counter key iv counter = assert (counter>=0)
-$ assert (counter < 2^(64::Integer))
+encode_counter key iv counter = User.assert "encode_counter >=0" (counter>=0)
+$ User.assert "encode_counter <64" (counter < 2^(64::Integer))
 $ key_iv_setup key $ iv ++ let { (q,r) = divMod counter $ 2^(32::Integer) } in map fromIntegral [r,q];
 
 salsa20w :: Rounds -> [W] -> [W] -> [[W]];
